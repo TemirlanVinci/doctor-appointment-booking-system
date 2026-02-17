@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Json, Path, State}, // Добавили Path
+    extract::{Json, Path, State},
     http::StatusCode,
     routing::{get, post},
     Router,
@@ -50,6 +50,16 @@ struct AppointmentResponse {
     status: String,
 }
 
+#[derive(Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
+struct AppointmentRow {
+    id: uuid::Uuid,
+    patient_name: String,
+    doctor_name: String, // Получаем через JOIN
+    start_time: chrono::DateTime<chrono::Utc>,
+    status: String,
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
@@ -68,8 +78,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = Router::new()
         .route("/", get(root))
         .route("/api/doctors", get(get_doctors))
-        .route("/api/doctors/:id", get(get_doctor)) // <--- НОВЫЙ МАРШРУТ
-        .route("/api/appointments", post(create_appointment))
+        .route("/api/doctors/:id", get(get_doctor))
+        // Обновили маршрут: теперь он поддерживает и POST (создание), и GET (просмотр)
+        .route(
+            "/api/appointments",
+            post(create_appointment).get(get_appointments),
+        )
         .layer(CorsLayer::permissive())
         .with_state(state);
 
@@ -86,7 +100,6 @@ async fn root() -> &'static str {
     "Medical System Backend is Online! 🟢"
 }
 
-// Получить всех врачей
 async fn get_doctors(
     State(state): State<AppState>,
 ) -> Result<Json<Vec<Doctor>>, (StatusCode, String)> {
@@ -98,7 +111,7 @@ async fn get_doctors(
     let doctors_with_slots: Vec<Doctor> = doctors_db
         .into_iter()
         .map(|mut doc| {
-            doc.available_slots = get_mock_slots(); // Вынесли слоты в функцию
+            doc.available_slots = get_mock_slots();
             doc
         })
         .collect();
@@ -106,7 +119,6 @@ async fn get_doctors(
     Ok(Json(doctors_with_slots))
 }
 
-// НОВАЯ ФУНКЦИЯ: Получить одного врача по ID
 async fn get_doctor(
     State(state): State<AppState>,
     Path(id): Path<uuid::Uuid>,
@@ -164,7 +176,29 @@ async fn create_appointment(
     }
 }
 
-// Вспомогательная функция для слотов (чтобы не дублировать код)
+async fn get_appointments(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<AppointmentRow>>, (StatusCode, String)> {
+    let sql = r#"
+        SELECT 
+            a.id, 
+            a.patient_name, 
+            d.name as doctor_name, 
+            a.start_time, 
+            a.status 
+        FROM appointments a
+        JOIN doctors d ON a.doctor_id = d.id
+        ORDER BY a.start_time DESC
+    "#;
+
+    let appointments = sqlx::query_as::<_, AppointmentRow>(sql)
+        .fetch_all(&state.pool)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(Json(appointments))
+}
+
 fn get_mock_slots() -> Vec<TimeSlot> {
     vec![
         TimeSlot {
