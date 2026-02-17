@@ -1,3 +1,5 @@
+**Note:** This project has been localized for the Kyrgyzstan region (Russian language interface & local data). The documentation below describes the general system architecture in English.
+
 # Doctor Appointment Booking System
 
 A full-stack web application for scheduling medical appointments. This project serves as a capstone assignment to demonstrate system architecture, database integrity, and modern web technologies.
