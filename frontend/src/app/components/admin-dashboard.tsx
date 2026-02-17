@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-import { ArrowLeft, Calendar, Users, Loader2, Clock } from 'lucide-react';
+import { ArrowLeft, Calendar, Users, Loader2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
+import { ru } from 'date-fns/locale';
 
 // Типы данных
 type View = 'appointments' | 'schedule';
@@ -15,7 +16,6 @@ interface Doctor {
   id: string;
   name: string;
   specialization: string;
-  // Добавили поле доступных слотов, которое приходит с бэкенда
   availableSlots: TimeSlot[];
 }
 
@@ -100,6 +100,17 @@ export function AdminDashboard() {
     }
   };
 
+  // Функция перевода статусов для отображения
+  const translateStatus = (status: string) => {
+      switch(status) {
+          case 'confirmed': return 'Подтверждено';
+          case 'pending': return 'Ожидание';
+          case 'completed': return 'Завершено';
+          case 'cancelled': return 'Отменено';
+          default: return status;
+      }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -116,12 +127,12 @@ export function AdminDashboard() {
           <div>
             <Link to="/" className="inline-flex items-center gap-2 text-[#6b7280] hover:text-[#1a1a1a] transition-colors mb-2">
               <ArrowLeft className="w-4 h-4" />
-              <span className="text-sm">Back to search</span>
+              <span className="text-sm">Вернуться к сайту</span>
             </Link>
-            <h1 className="tracking-tight text-[#1a1a1a] font-bold text-xl">ADMIN DASHBOARD</h1>
+            <h1 className="tracking-tight text-[#1a1a1a] font-bold text-xl">ПАНЕЛЬ АДМИНИСТРАТОРА</h1>
           </div>
           <div className="text-sm text-[#6b7280]">
-             {appointments.length} Total Appointments
+             {appointments.length} Всего записей
           </div>
         </div>
       </header>
@@ -139,7 +150,7 @@ export function AdminDashboard() {
             }`}
           >
             <Users className="w-4 h-4 inline mr-2" />
-            Appointments List
+            Список записей
           </button>
           <button
             onClick={() => setView('schedule')}
@@ -150,7 +161,7 @@ export function AdminDashboard() {
             }`}
           >
             <Calendar className="w-4 h-4 inline mr-2" />
-            Doctor Schedule
+            Расписание врачей
           </button>
         </div>
 
@@ -159,13 +170,13 @@ export function AdminDashboard() {
             {/* Filters */}
             <div className="mb-6 flex gap-4 flex-wrap p-4 bg-[#f9fafb] rounded-lg border border-[#e5e7eb]">
               <div>
-                <label className="block text-xs font-semibold text-[#6b7280] mb-1 uppercase">Filter by Doctor</label>
+                <label className="block text-xs font-semibold text-[#6b7280] mb-1 uppercase">Врач</label>
                 <select
                   value={selectedDoctor}
                   onChange={(e) => setSelectedDoctor(e.target.value)}
                   className="bg-white border border-[#e5e7eb] px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#0066ff] outline-none rounded-md min-w-[200px]"
                 >
-                  <option value="all">All Doctors</option>
+                  <option value="all">Все врачи</option>
                   {doctors.map((doctor) => (
                     <option key={doctor.id} value={doctor.name}>
                       {doctor.name}
@@ -175,17 +186,17 @@ export function AdminDashboard() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#6b7280] mb-1 uppercase">Filter by Status</label>
+                <label className="block text-xs font-semibold text-[#6b7280] mb-1 uppercase">Статус</label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className="bg-white border border-[#e5e7eb] px-3 py-2 text-sm text-[#1a1a1a] focus:border-[#0066ff] outline-none rounded-md min-w-[150px]"
                 >
-                  <option value="all">All Status</option>
-                  <option value="confirmed">Confirmed</option>
-                  <option value="pending">Pending</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
+                  <option value="all">Все статусы</option>
+                  <option value="confirmed">Подтверждено</option>
+                  <option value="pending">Ожидание</option>
+                  <option value="completed">Завершено</option>
+                  <option value="cancelled">Отменено</option>
                 </select>
               </div>
             </div>
@@ -195,10 +206,10 @@ export function AdminDashboard() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b border-[#e5e7eb] bg-[#f9fafb]">
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-[#6b7280] uppercase tracking-wider">Patient</th>
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-[#6b7280] uppercase tracking-wider">Doctor</th>
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-[#6b7280] uppercase tracking-wider">Date & Time</th>
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-[#6b7280] uppercase tracking-wider">Status</th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-[#6b7280] uppercase tracking-wider">Пациент</th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-[#6b7280] uppercase tracking-wider">Врач</th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-[#6b7280] uppercase tracking-wider">Дата и Время</th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-[#6b7280] uppercase tracking-wider">Статус</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-[#e5e7eb]">
@@ -210,12 +221,12 @@ export function AdminDashboard() {
                       </td>
                       <td className="py-4 px-4 text-sm text-[#1a1a1a]">{apt.doctorName}</td>
                       <td className="py-4 px-4 text-sm text-[#1a1a1a]">
-                        <div>{format(parseISO(apt.date), 'MMM d, yyyy')}</div>
+                        <div>{format(parseISO(apt.date), 'dd MMM yyyy', { locale: ru })}</div>
                         <div className="text-[#6b7280]">{apt.time}</div>
                       </td>
                       <td className="py-4 px-4">
                         <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(apt.status)}`}>
-                          {apt.status}
+                          {translateStatus(apt.status)}
                         </span>
                       </td>
                     </tr>
@@ -226,7 +237,7 @@ export function AdminDashboard() {
 
             {filteredAppointments.length === 0 && (
               <div className="text-center py-20 bg-white border border-[#e5e7eb] rounded-lg mt-4 border-dashed">
-                <div className="text-[#6b7280]">No appointments found matching your criteria.</div>
+                <div className="text-[#6b7280]">Записей не найдено.</div>
               </div>
             )}
           </>
@@ -243,7 +254,7 @@ export function AdminDashboard() {
                     <p className="text-[#6b7280] text-sm">{doctor.specialization}</p>
                    </div>
                    <div className="text-sm bg-white px-3 py-1 rounded-md border border-[#e5e7eb] text-[#6b7280]">
-                     {appointments.length} active bookings
+                     {appointments.length} активных записей
                    </div>
                 </div>
 
@@ -251,7 +262,7 @@ export function AdminDashboard() {
                   {/* Section 1: Booked Appointments */}
                   <h4 className="text-xs font-bold text-[#1a1a1a] uppercase tracking-wider mb-4 flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-[#0066ff]"></span>
-                    Booked Appointments
+                    Занятые слоты
                   </h4>
                   
                   {appointments.length > 0 ? (
@@ -263,33 +274,33 @@ export function AdminDashboard() {
                         >
                           <div className={`absolute top-0 left-0 w-1 h-full ${apt.status === 'confirmed' ? 'bg-[#0066ff]' : 'bg-gray-300'}`}></div>
                           <div className="flex justify-between items-start mb-2 pl-2">
-                            <div className="font-medium text-[#1a1a1a]">{format(parseISO(apt.date), 'MMM d')}</div>
+                            <div className="font-medium text-[#1a1a1a]">{format(parseISO(apt.date), 'dd MMM', { locale: ru })}</div>
                             <div className="text-[#0066ff] font-bold">{apt.time}</div>
                           </div>
                           <div className="pl-2">
                             <div className="text-sm text-[#1a1a1a] font-medium">{apt.patientName}</div>
-                            <div className="text-xs text-[#6b7280] mt-1 uppercase">{apt.status}</div>
+                            <div className="text-xs text-[#6b7280] mt-1 uppercase">{translateStatus(apt.status)}</div>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
                     <div className="text-sm text-[#9ca3af] italic mb-8 pl-4 border-l-2 border-[#e5e7eb]">
-                      No patients booked yet.
+                      Нет записей на ближайшее время.
                     </div>
                   )}
 
-                  {/* Section 2: Available Slots (From Backend) */}
+                  {/* Section 2: Available Slots */}
                   <h4 className="text-xs font-bold text-[#1a1a1a] uppercase tracking-wider mb-4 flex items-center gap-2 mt-8 border-t border-[#e5e7eb] pt-8">
                     <span className="w-2 h-2 rounded-full bg-[#10b981]"></span>
-                    Available Openings
+                    Свободные окна (График)
                   </h4>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {doctor.availableSlots && doctor.availableSlots.map((slot, idx) => (
                       <div key={idx} className="flex items-center gap-3 text-sm border border-dashed border-[#e5e7eb] p-3 rounded-lg bg-[#f0fdf4]">
-                        <div className="font-medium text-[#15803d] min-w-[100px]">
-                          {format(parseISO(slot.date), 'MMM d, yyyy')}
+                        <div className="font-medium text-[#15803d] min-w-[100px] capitalize">
+                          {format(parseISO(slot.date), 'dd MMM', { locale: ru })}
                         </div>
                         <div className="flex gap-2 flex-wrap">
                           {slot.times.map((time) => (

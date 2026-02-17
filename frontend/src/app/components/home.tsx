@@ -1,38 +1,29 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, Star } from 'lucide-react';
+import { Link } from 'react-router';
+import { Search, Star, Clock, Briefcase } from 'lucide-react';
+import { DoctorProfile } from './doctor-profile';
 
-// 1. ОПРЕДЕЛЯЕМ ТИП ДАННЫХ ПРЯМО ЗДЕСЬ
-// Это то, что мы ждем от Rust-сервера
+// Интерфейс врача
 interface Doctor {
   id: string;
   name: string;
   specialization: string;
+  bio: string;
+  price: number;
   imageUrl: string;
   rating: number;
   experience: number;
-  price: number;
 }
 
-// 2. СПИСОК СПЕЦИАЛЬНОСТЕЙ
-// Мы перенесли его из mock-data, чтобы не зависеть от лишних файлов
-const specializations = [
-  "All",
-  "Cardiology",
-  "Dermatology",
-  "Neurology",
-  "Orthopedics",
-  "Pediatrics",
-  "Psychiatry"
-];
+// Список специализаций для фильтра (должен совпадать с БД)
+const specializations = ['Все', 'Кардиология', 'Терапия', 'Дерматология', 'Неврология'];
 
 export function Home() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSpecialization, setSelectedSpecialization] = useState('All');
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSpec, setSelectedSpec] = useState('Все');
   const [loading, setLoading] = useState(true);
 
-  // ЗАГРУЗКА ДАННЫХ С RUST
   useEffect(() => {
     fetch('http://localhost:8080/api/doctors')
       .then((res) => res.json())
@@ -40,109 +31,124 @@ export function Home() {
         setDoctors(data);
         setLoading(false);
       })
-      .catch((err) => {
-        console.error("Failed to fetch doctors:", err);
-        setLoading(false);
-      });
+      .catch((err) => console.error("Ошибка:", err));
   }, []);
 
   const filteredDoctors = doctors.filter((doctor) => {
-    const matchesSearch = 
-      doctor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doctor.specialization.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesSpecialization = 
-      selectedSpecialization === 'All' || doctor.specialization === selectedSpecialization;
-    return matchesSearch && matchesSpecialization;
+    const matchesSearch = doctor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          doctor.specialization.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSpec = selectedSpec === 'Все' || doctor.specialization === selectedSpec;
+
+    return matchesSearch && matchesSpec;
   });
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-white text-[#1a1a1a]">Loading system...</div>;
-  }
+  if (loading) return <div className="p-10 text-center">Загрузка...</div>;
 
   return (
-    <div className="min-h-screen bg-white text-[#1a1a1a]">
+    <div className="min-h-screen bg-[#FAFAFA] text-[#1a1a1a] font-sans">
       {/* Header */}
-      <header className="border-b border-[#e5e7eb] sticky top-0 bg-white z-10">
-        <div className="px-4 py-6 md:px-8 lg:px-12">
-          <h1 className="tracking-tight mb-1 text-[#1a1a1a] font-bold text-2xl">MEDBOOK</h1>
-          <p className="text-[#6b7280] text-sm">System Powered by Rust & React</p>
+      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-[#E5E7EB]">
+        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-[#0066FF] rounded-lg flex items-center justify-center text-white font-bold">M</div>
+            <span className="font-bold text-xl tracking-tight">MEDBOOK.KG</span>
+          </div>
+          <div className="text-xs text-[#6B7280] hidden sm:block">
+            Медицинская система записи
+          </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="px-4 py-8 md:px-8 lg:px-12 max-w-7xl mx-auto">
-        {/* Search Section */}
-        <div className="mb-12">
-          <div className="relative">
-            <Search className="absolute left-0 top-1/2 -translate-y-1/2 text-[#6b7280] w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search doctors or specializations"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-transparent border-b border-[#e5e7eb] pl-8 pr-0 pb-3 text-[#1a1a1a] placeholder:text-[#6b7280] focus:border-[#0066ff] outline-none transition-colors"
-            />
+      {/* Hero Section */}
+      <div className="max-w-5xl mx-auto px-4 py-12">
+        <h1 className="text-4xl md:text-5xl font-bold text-center mb-4 tracking-tight text-[#111827]">
+          Найдите своего врача
+        </h1>
+        <p className="text-center text-[#6B7280] mb-8 text-lg">
+          Записывайтесь к лучшим специалистам Бишкека онлайн
+        </p>
+
+        {/* Search Bar */}
+        <div className="relative max-w-xl mx-auto mb-12 shadow-sm">
+          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-[#9CA3AF]" />
           </div>
+          <input
+            type="text"
+            className="w-full pl-12 pr-4 py-4 rounded-2xl border-none ring-1 ring-[#E5E7EB] focus:ring-2 focus:ring-[#0066FF] shadow-sm bg-white text-lg placeholder:text-[#9CA3AF] transition-all"
+            placeholder="Поиск по имени или специальности..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
 
         {/* Filter Tags */}
-        <div className="mb-12">
-          <div className="flex gap-2 flex-wrap">
-            {specializations.map((spec) => (
-              <button
-                key={spec}
-                onClick={() => setSelectedSpecialization(spec)}
-                className={`px-4 py-2 border transition-colors rounded-lg text-sm ${
-                  selectedSpecialization === spec
-                    ? 'bg-[#0066ff] text-white border-[#0066ff]'
-                    : 'bg-white text-[#1a1a1a] border-[#e5e7eb] hover:border-[#0066ff]'
-                }`}
-              >
-                {spec}
-              </button>
-            ))}
-          </div>
+        <div className="flex gap-2 overflow-x-auto pb-4 justify-center mb-8 no-scrollbar">
+          {specializations.map((spec) => (
+            <button
+              key={spec}
+              onClick={() => setSelectedSpec(spec)}
+              className={`px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                selectedSpec === spec
+                  ? 'bg-[#111827] text-white shadow-md transform scale-105'
+                  : 'bg-white text-[#4B5563] border border-[#E5E7EB] hover:border-[#9CA3AF]'
+              }`}
+            >
+              {spec}
+            </button>
+          ))}
         </div>
 
         {/* Doctors Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredDoctors.map((doctor) => (
-            <Link
-              key={doctor.id}
-              to={`/doctor/${doctor.id}`}
-              className="bg-white border border-[#e5e7eb] p-6 hover:border-[#0066ff] transition-colors group rounded-xl"
-            >
-              <div className="aspect-square mb-4 bg-[#f7f8fa] overflow-hidden rounded-lg">
-                <img 
-                  src={doctor.imageUrl || "https://via.placeholder.com/400"} 
-                  alt={doctor.name}
-                  className="w-full h-full object-cover transition-all"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <h3 className="text-[#1a1a1a] font-semibold">{doctor.name}</h3>
-                <p className="text-[#6b7280] text-sm">{doctor.specialization}</p>
-                
-                <div className="flex items-center gap-4 text-sm">
-                  <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 fill-[#0066ff] text-[#0066ff]" />
-                    <span className="text-[#1a1a1a]">{doctor.rating}</span>
+            <Link key={doctor.id} to={`/doctor/${doctor.id}`} className="group">
+              <div className="bg-white rounded-2xl p-6 border border-[#F3F4F6] hover:border-[#0066FF]/30 hover:shadow-xl transition-all duration-300 h-full flex flex-col">
+                <div className="flex items-start gap-4 mb-4">
+                  <img
+                    src={doctor.imageUrl || "https://via.placeholder.com/150"}
+                    alt={doctor.name}
+                    className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm"
+                  />
+                  <div>
+                    <h3 className="font-bold text-lg text-[#111827] group-hover:text-[#0066FF] transition-colors">
+                      {doctor.name}
+                    </h3>
+                    <p className="text-[#0066FF] font-medium text-sm">{doctor.specialization}</p>
                   </div>
-                  <span className="text-[#6b7280]">{doctor.experience}y exp</span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3 mb-6 text-sm">
+                  <div className="flex items-center gap-2 text-[#4B5563] bg-[#F9FAFB] p-2 rounded-lg">
+                    <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                    <span>{doctor.rating} Рейтинг</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[#4B5563] bg-[#F9FAFB] p-2 rounded-lg">
+                    <Briefcase className="w-4 h-4 text-[#9CA3AF]" />
+                    <span>{doctor.experience} лет</span>
+                  </div>
                 </div>
 
-                <div className="pt-2 border-t border-[#e5e7eb] mt-4 flex justify-between items-center">
-                  <div>
-                    <span className="text-[#1a1a1a] font-medium">${doctor.price}</span>
-                    <span className="text-[#6b7280] text-sm"> / session</span>
+                <div className="mt-auto flex items-center justify-between pt-4 border-t border-[#F3F4F6]">
+                  <div className="text-lg font-bold text-[#111827]">
+                    {doctor.price} сом
+                    <span className="text-xs font-normal text-[#6B7280] ml-1">/ прием</span>
                   </div>
+                  <span className="text-sm font-semibold text-[#0066FF] group-hover:underline">
+                    Записаться →
+                  </span>
                 </div>
               </div>
             </Link>
           ))}
         </div>
-      </main>
+        
+        {filteredDoctors.length === 0 && (
+           <div className="text-center py-20 text-[#6B7280]">
+             Ничего не найдено по вашему запросу.
+           </div>
+        )}
+      </div>
     </div>
   );
 }

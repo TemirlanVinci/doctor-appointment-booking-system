@@ -71,7 +71,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .connect(&db_url)
         .await?;
 
-    sqlx::migrate!("./migrations").run(&pool).await?;
+    //sqlx::migrate!("./migrations").run(&pool).await?;
 
     let state = AppState { pool };
 
@@ -199,19 +199,45 @@ async fn get_appointments(
     Ok(Json(appointments))
 }
 
+// Вспомогательная функция для слотов
 fn get_mock_slots() -> Vec<TimeSlot> {
     vec![
         TimeSlot {
-            date: "2026-02-05".to_string(),
+            // Завтра
+            date: "2026-02-18".to_string(),
             times: vec![
                 "09:00".to_string(),
+                "09:30".to_string(),
                 "10:00".to_string(),
+                "11:30".to_string(),
                 "14:00".to_string(),
+                "15:30".to_string(),
+                "17:00".to_string(),
             ],
         },
         TimeSlot {
-            date: "2026-02-06".to_string(),
-            times: vec!["11:00".to_string(), "15:00".to_string()],
+            // Послезавтра
+            date: "2026-02-19".to_string(),
+            times: vec![
+                "09:00".to_string(),
+                "10:30".to_string(),
+                "12:00".to_string(),
+                "13:30".to_string(),
+                "15:00".to_string(),
+                "16:30".to_string(),
+            ],
+        },
+        TimeSlot {
+            // Пятница
+            date: "2026-02-20".to_string(),
+            times: vec![
+                "10:00".to_string(),
+                "11:00".to_string(),
+                "13:00".to_string(),
+                "14:00".to_string(),
+                "15:00".to_string(),
+                "16:00".to_string(),
+            ],
         },
     ]
 }
